@@ -2,14 +2,14 @@
   <div class="vab-ad">
     <el-carousel v-if="adList" :autoplay="true" :interval="3000" direction="vertical" height="30px" indicator-position="none">
       <el-carousel-item v-for="(item, index) in adList" :key="index">
-        <el-tag type="warning">付费版本 Ad</el-tag>
-        <a :href="item.url" target="_blank">{{ item.title }}</a>
+        <el-tag type="warning">公告</el-tag>
+        <a href="javascript:void(0)" @click.prevent="openNoticeCenter(item)">{{ item.title }}</a>
       </el-carousel-item>
     </el-carousel>
   </div>
 </template>
 <script>
-  import { getList } from '@/api/ad'
+  import { getPublishedNotices } from '@/api/noticeManagement'
 
   export default {
     name: 'VabAd',
@@ -24,8 +24,11 @@
     },
     methods: {
       async fetchData() {
-        const { data } = await getList()
+        const { data } = await getPublishedNotices({ pageSize: 10 })
         this.adList = data
+      },
+      openNoticeCenter(item) {
+        this.$router.push({ name: 'Notification', query: { noticeId: item.id } })
       },
     },
   }

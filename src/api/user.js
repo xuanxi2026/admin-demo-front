@@ -53,6 +53,14 @@ export function updateProfile(data) {
   })
 }
 
+export function changePassword(data) {
+  return request({
+    url: '/profile/change-password',
+    method: 'post',
+    data,
+  })
+}
+
 export function setupGoogleAuth() {
   return request({
     url: '/auth/google/setup',

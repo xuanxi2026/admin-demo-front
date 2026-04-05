@@ -2,23 +2,26 @@
   <el-dropdown @command="handleCommand" trigger="click">
     <div class="avatar-container">
       <div class="avatar-wrapper">
-        <img :src="avatar" alt="用户头像" class="user-avatar" />
+        <el-badge :hidden="unreadCount <= 0" :value="badgeValue" class="avatar-badge">
+          <img :src="avatar" alt="用户头像" class="user-avatar" />
+        </el-badge>
       </div>
-      <!-- <div class="user-info">
+      <div class="user-info">
         <div class="username">{{ username }}</div>
-      </div> -->
+        <div class="user-role">{{ userRole }}</div>
+      </div>
     </div>
 
     <el-dropdown-menu slot="dropdown" class="custom-dropdown">
       <div class="dropdown-header">
         <img :src="avatar" alt="用户头像" class="header-avatar" />
         <div class="header-info">
-          <div class="header-username">{{ username }}</div>
-          <div class="header-email">admin@example.com</div>
+          <div class="header-username">{{ profile.nickname || username }}</div>
+          <div class="header-email">{{ profile.email || '未设置邮箱' }}</div>
         </div>
       </div>
 
-      <!-- <el-dropdown-item command="personalCenter" class="dropdown-item">
+      <el-dropdown-item command="personalCenter" class="dropdown-item">
         <i class="el-icon-user-solid"></i>
         <span>个人中心</span>
       </el-dropdown-item>
@@ -26,38 +29,14 @@
       <el-dropdown-item command="settings" class="dropdown-item">
         <i class="el-icon-setting"></i>
         <span>系统设置</span>
-      </el-dropdown-item> -->
-
-      <!-- <el-divider></el-divider> -->
-
-      <el-dropdown-item command="github" class="dropdown-item">
-        <i class="el-icon-link"></i>
-        <span>GitHub 地址</span>
       </el-dropdown-item>
 
-      <el-dropdown-item command="gitee" class="dropdown-item">
+      <el-dropdown-item command="notification" class="dropdown-item">
         <i class="el-icon-link"></i>
-        <span>码云地址</span>
-      </el-dropdown-item>
-
-      <el-dropdown-item command="pro" class="dropdown-item">
-        <i class="el-icon-link"></i>
-        <span>Admin Pro 地址</span>
-      </el-dropdown-item>
-
-      <el-dropdown-item command="plus" class="dropdown-item">
-        <i class="el-icon-link"></i>
-        <span>Admin Plus 地址</span>
-      </el-dropdown-item>
-
-      <el-dropdown-item command="shop" class="dropdown-item">
-        <i class="el-icon-link"></i>
-        <span>Shop Vite 地址</span>
-      </el-dropdown-item>
-
-      <el-dropdown-item command="job" class="dropdown-item">
-        <i class="el-icon-link"></i>
-        <span>好工作就业参考网</span>
+        <span class="notification-label">
+          <span>通知中心</span>
+          <el-badge :hidden="unreadCount <= 0" :value="badgeValue" />
+        </span>
       </el-dropdown-item>
 
       <el-divider></el-divider>
@@ -73,16 +52,62 @@
 <script>
   import { mapGetters } from 'vuex'
   import { recordRoute } from '@/config'
+  import { getProfile } from '@/api/user'
+  import { NOTICE_EVENT, fetchPublishedNotifications } from '@/utils/noticeCenter'
 
   export default {
     name: 'VabAvatar',
+    data() {
+      return {
+        profile: {
+          nickname: '',
+          email: '',
+        },
+        unreadCount: 0,
+      }
+    },
     computed: {
       ...mapGetters({
         avatar: 'user/avatar',
         username: 'user/username',
+        permissions: 'user/permissions',
       }),
+      userRole() {
+        return (this.permissions && this.permissions[0]) || '管理员'
+      },
+      badgeValue() {
+        return this.unreadCount > 99 ? '99+' : this.unreadCount
+      },
+    },
+    created() {
+      this.fetchProfile()
+      this.fetchUnreadCount()
+      this.$baseEventBus.$on(NOTICE_EVENT, this.handleNoticeChange)
+    },
+    beforeDestroy() {
+      this.$baseEventBus.$off(NOTICE_EVENT, this.handleNoticeChange)
     },
     methods: {
+      async fetchProfile() {
+        try {
+          const { data } = await getProfile()
+          this.profile.nickname = data.nickname || ''
+          this.profile.email = data.email || ''
+        } catch (error) {}
+      },
+      async fetchUnreadCount() {
+        try {
+          const { unreadCount } = await fetchPublishedNotifications()
+          this.unreadCount = unreadCount
+        } catch (error) {}
+      },
+      handleNoticeChange(payload = {}) {
+        if (typeof payload.unreadCount === 'number') {
+          this.unreadCount = payload.unreadCount
+          return
+        }
+        this.fetchUnreadCount()
+      },
       handleCommand(command) {
         switch (command) {
           case 'logout':
@@ -94,31 +119,16 @@
           case 'settings':
             this.settings()
             break
-          case 'github':
-            window.open('https://github.com/zxwk1998/vue-admin-better')
-            break
-          case 'gitee':
-            window.open('https://gitee.com/chu1204505056/vue-admin-better')
-            break
-          case 'pro':
-            window.open('https://vuejs-core.cn/admin-pro/')
-            break
-          case 'plus':
-            window.open('https://vuejs-core.cn/admin-plus/')
-            break
-          case 'shop':
-            window.open('https://vuejs-core.cn/shop-vite/')
-            break
-          case 'job':
-            window.open('https://job.vuejs-core.cn/')
+          case 'notification':
+            this.$router.push({ name: 'Notification' })
             break
         }
       },
       personalCenter() {
-        this.$router.push('/personalCenter/personalCenter')
+        this.$router.push({ name: 'PersonalCenter' })
       },
       settings() {
-        this.$message.info('系统设置功能开发中...')
+        this.$router.push({ name: 'SystemSettings' })
       },
       logout() {
         this.$baseConfirm('您确定要退出' + this.$baseTitle + '吗?', null, async () => {
@@ -144,6 +154,13 @@
 
     .avatar-wrapper {
       position: relative;
+
+      .avatar-badge {
+        ::v-deep .el-badge__content {
+          top: 4px;
+          right: 10px;
+        }
+      }
 
       .user-avatar {
         width: 37.5px;
@@ -240,6 +257,14 @@
 
       span {
         font-size: 14px;
+      }
+
+      .notification-label {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
       }
 
       &.logout-item {
