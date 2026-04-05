@@ -2,6 +2,20 @@
   <div class="index-container">
     <el-row :gutter="20">
       <el-col :lg="24" :md="24" :sm="24" :xl="24" :xs="24">
+        <el-card class="site-hero-card" shadow="never">
+          <div class="site-hero">
+            <div>
+              <div class="site-hero__eyebrow">站点概览</div>
+              <div class="site-hero__title">{{ siteInfo.siteName || 'Admin Demo' }}</div>
+              <div class="site-hero__desc">{{ siteInfo.description || '可复用后台管理系统基座' }}</div>
+            </div>
+            <el-tag :type="siteInfo.maintenanceMode ? 'warning' : 'success'" effect="light">
+              {{ siteInfo.maintenanceMode ? '维护模式' : '运行中' }}
+            </el-tag>
+          </div>
+        </el-card>
+      </el-col>
+      <el-col :lg="24" :md="24" :sm="24" :xl="24" :xs="24">
         <el-alert v-if="noticeList">
           <div style="display: flex; align-items: center; justify-content: center">
             <a href="https://github.com/zxwk1998/vue-admin-better" target="_blank">
@@ -190,8 +204,8 @@
           </div>
           <div class="advanced-content">
             <div class="logo-section">
-              <h1 class="project-title">vue-admin-better</h1>
-              <p class="project-description">基于 Vue2 + Element UI 的企业级管理系统</p>
+              <h1 class="project-title">{{ siteInfo.siteName || 'Admin Demo' }}</h1>
+              <p class="project-description">{{ siteInfo.description || '可复用后台管理系统基座' }}</p>
             </div>
 
             <div class="stats-section">
@@ -442,6 +456,7 @@
   import VabChart from '@/plugins/echarts'
   import { dependencies, devDependencies } from '../../../package.json'
   import { getNoticeList } from '@/api/notice'
+  import { SITE_SETTINGS_EVENT, getRuntimeDescription, getRuntimeMaintenanceMode, getRuntimeTitle } from '@/utils/siteSettings'
 
   export default {
     name: 'Index',
@@ -455,6 +470,11 @@
         nodeEnv: process.env.NODE_ENV,
         dependencies: dependencies,
         devDependencies: devDependencies,
+        siteInfo: {
+          siteName: getRuntimeTitle(),
+          description: getRuntimeDescription(),
+          maintenanceMode: getRuntimeMaintenanceMode(),
+        },
         config1: {
           startVal: 0,
           endVal: this.$baseLodash.random(20000, 60000),
@@ -896,6 +916,7 @@
     },
     beforeDestroy() {
       clearInterval(this.timer)
+      this.$baseEventBus.$off(SITE_SETTINGS_EVENT, this.handleSiteSettingsChange)
     },
     mounted() {
       let base = +new Date(2020, 1, 1)
@@ -929,8 +950,16 @@
         this.fwl.xAxis[0].data = date
         this.fwl.series[0].data = data
       }, 3000)
+      this.$baseEventBus.$on(SITE_SETTINGS_EVENT, this.handleSiteSettingsChange)
     },
     methods: {
+      handleSiteSettingsChange(settings = {}) {
+        this.siteInfo = {
+          siteName: settings.siteName || getRuntimeTitle(),
+          description: settings.description || getRuntimeDescription(),
+          maintenanceMode: !!settings.maintenanceMode,
+        }
+      },
       handleClick(e) {
         this.$baseMessage(`点击了${e.name},这里可以写跳转`)
       },
@@ -979,6 +1008,35 @@
     padding: 0 !important;
     margin: 0 !important;
     background: #f5f7f8 !important;
+
+    .site-hero-card {
+      margin-bottom: 15px;
+    }
+
+    .site-hero {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .site-hero__eyebrow {
+      color: #909399;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+    }
+
+    .site-hero__title {
+      margin-top: 6px;
+      font-size: 28px;
+      font-weight: 700;
+    }
+
+    .site-hero__desc {
+      margin-top: 8px;
+      color: #606266;
+      line-height: 1.7;
+    }
 
     ::v-deep {
       .el-alert {

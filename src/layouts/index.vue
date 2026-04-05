@@ -17,6 +17,16 @@
         </div>
       </div>
       <div class="vab-main main-padding">
+        <el-alert
+          v-if="siteSettings.maintenanceMode"
+          :closable="false"
+          class="global-maintenance-alert"
+          title="系统当前处于维护模式"
+          type="warning"
+          show-icon
+        >
+          {{ siteSettings.description || '维护期间部分功能可能受限，请关注通知公告。' }}
+        </el-alert>
         <vab-ad />
         <vab-app-main />
       </div>
@@ -36,6 +46,16 @@
           <vab-nav />
           <vab-tabs v-if="tabsBar === 'true' || tabsBar === true" />
         </div>
+        <el-alert
+          v-if="siteSettings.maintenanceMode"
+          :closable="false"
+          class="global-maintenance-alert"
+          title="系统当前处于维护模式"
+          type="warning"
+          show-icon
+        >
+          {{ siteSettings.description || '维护期间部分功能可能受限，请关注通知公告。' }}
+        </el-alert>
         <vab-ad />
         <vab-app-main />
       </div>
@@ -47,6 +67,7 @@
 <script>
   import { mapActions, mapGetters } from 'vuex'
   import { tokenName } from '@/config'
+  import { SITE_SETTINGS_EVENT, getRuntimeDescription, getRuntimeMaintenanceMode, refreshSiteSettings } from '@/utils/siteSettings'
 
   export default {
     name: 'Layout',
@@ -55,6 +76,10 @@
         oldLayout: '',
         controller: new window.AbortController(),
         timeOutID: null,
+        siteSettings: {
+          description: getRuntimeDescription(),
+          maintenanceMode: getRuntimeMaintenanceMode(),
+        },
       }
     },
     computed: {
@@ -76,6 +101,7 @@
     },
     beforeDestroy() {
       window.removeEventListener('resize', this.handleResize)
+      this.$baseEventBus.$off(SITE_SETTINGS_EVENT, this.handleSiteSettingsChange)
       this.controller.abort()
       clearTimeout(this.timeOutID)
     },
@@ -110,6 +136,8 @@
           }
         )
       })
+      refreshSiteSettings(this).catch(() => {})
+      this.$baseEventBus.$on(SITE_SETTINGS_EVENT, this.handleSiteSettingsChange)
     },
     methods: {
       ...mapActions({
@@ -117,6 +145,12 @@
       }),
       handleIsMobile() {
         return document.body.getBoundingClientRect().width - 1 < 992
+      },
+      handleSiteSettingsChange(settings = {}) {
+        this.siteSettings = {
+          description: settings.description || '',
+          maintenanceMode: !!settings.maintenanceMode,
+        }
       },
       handleResize() {
         if (!document.hidden) {
@@ -150,6 +184,10 @@
     position: relative;
     width: 100%;
     height: 100%;
+
+    .global-maintenance-alert {
+      margin: $base-padding $base-padding 0;
+    }
 
     .layout-container-horizontal {
       position: relative;
