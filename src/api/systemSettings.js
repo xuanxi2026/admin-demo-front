@@ -3,8 +3,8 @@ import { baseURL, tokenName } from '@/config'
 import store from '@/store'
 import { doEdit, getList } from '@/api/configManagement'
 
-const defaultSettings = {
-  basic: {
+export const defaultSettings = {
+  site: {
     'site.title': { group: 'site', name: '站点标题', valueType: 'string', configValue: 'Admin Demo' },
     'site.description': { group: 'site', name: '站点描述', valueType: 'string', configValue: '可复用后台管理系统基座' },
     'site.logo': { group: 'site', name: '站点 Logo', valueType: 'string', configValue: '' },
@@ -28,6 +28,10 @@ const defaultSettings = {
 
 function resolveGroupDefaults(group) {
   return defaultSettings[group] || {}
+}
+
+export function toBooleanSetting(value) {
+  return String(value) === 'true'
 }
 
 export async function fetchSettingsByGroup(group) {
@@ -60,6 +64,18 @@ export async function fetchSettingsByGroup(group) {
         }
     return acc
   }, {})
+}
+
+export function buildSettingsPayload(metaMap, values) {
+  return Object.entries(values).map(([key, configValue]) => ({
+    id: metaMap[key] ? metaMap[key].id : '',
+    configKey: key,
+    configValue: String(configValue),
+    group: metaMap[key] ? metaMap[key].group : key.split('.')[0],
+    name: metaMap[key] ? metaMap[key].name : key,
+    valueType: metaMap[key] ? metaMap[key].valueType : 'string',
+    remark: metaMap[key] ? metaMap[key].remark || '' : '',
+  }))
 }
 
 export async function saveSettings(items = []) {

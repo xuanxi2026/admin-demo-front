@@ -18,6 +18,23 @@
               <el-button @click="loadBasicSettings">重载</el-button>
             </el-form-item>
           </el-form>
+          <el-divider content-position="left">站点预览</el-divider>
+          <div class="site-preview">
+            <div class="site-preview__header">
+              <img v-if="basicForm.logo" :src="basicForm.logo" alt="logo" class="site-preview__logo" />
+              <div v-else class="site-preview__logo site-preview__logo--placeholder">Logo</div>
+              <div class="site-preview__meta">
+                <div class="site-preview__title">{{ basicForm.siteName || 'Admin Demo' }}</div>
+                <div class="site-preview__desc">{{ basicForm.description || '可复用后台管理系统基座' }}</div>
+              </div>
+            </div>
+            <el-alert
+              :closable="false"
+              :title="basicForm.maintenanceMode ? '当前已开启维护模式' : '当前为正常访问模式'"
+              :type="basicForm.maintenanceMode ? 'warning' : 'success'"
+              show-icon
+            />
+          </div>
         </el-tab-pane>
         <el-tab-pane label="安全设置" name="security">
           <el-form ref="securityForm" :model="securityForm" :rules="securityRules" label-width="150px" style="max-width: 640px">
@@ -52,7 +69,14 @@
 </template>
 
 <script>
-  import { fetchSettingsByGroup, publicUploadEndpoint, saveSettings, uploadHeaders as buildUploadHeaders } from '@/api/systemSettings'
+  import {
+    buildSettingsPayload,
+    fetchSettingsByGroup,
+    publicUploadEndpoint,
+    saveSettings,
+    toBooleanSetting,
+    uploadHeaders as buildUploadHeaders,
+  } from '@/api/systemSettings'
   import { applySiteSettings } from '@/utils/siteSettings'
 
   export default {
@@ -113,9 +137,6 @@
           this.$baseMessage(response.msg || 'Logo 上传失败', 'error')
         }
       },
-      toBool(value) {
-        return String(value) === 'true'
-      },
       async loadAllSettings() {
         await Promise.all([this.loadBasicSettings(), this.loadSecuritySettings(), this.loadEmailSettings()])
       },
@@ -125,15 +146,16 @@
           siteName: this.basicConfigMeta['site.title'] ? this.basicConfigMeta['site.title'].configValue : '',
           description: this.basicConfigMeta['site.description'] ? this.basicConfigMeta['site.description'].configValue : '',
           logo: this.basicConfigMeta['site.logo'] ? this.basicConfigMeta['site.logo'].configValue : '',
-          maintenanceMode: this.toBool(this.basicConfigMeta['site.maintenance_mode'] ? this.basicConfigMeta['site.maintenance_mode'].configValue : false),
+          maintenanceMode: toBooleanSetting(this.basicConfigMeta['site.maintenance_mode'] ? this.basicConfigMeta['site.maintenance_mode'].configValue : false),
         }
+        applySiteSettings(this, this.basicForm)
       },
       async loadSecuritySettings() {
         this.securityConfigMeta = await fetchSettingsByGroup('security')
         this.securityForm = {
           minPasswordLength: Number(this.securityConfigMeta['security.password_min_length'] ? this.securityConfigMeta['security.password_min_length'].configValue : 8),
-          loginCaptcha: this.toBool(this.securityConfigMeta['security.login_captcha'] ? this.securityConfigMeta['security.login_captcha'].configValue : false),
-          twoFactorAuth: this.toBool(this.securityConfigMeta['security.two_factor_auth'] ? this.securityConfigMeta['security.two_factor_auth'].configValue : false),
+          loginCaptcha: toBooleanSetting(this.securityConfigMeta['security.login_captcha'] ? this.securityConfigMeta['security.login_captcha'].configValue : false),
+          twoFactorAuth: toBooleanSetting(this.securityConfigMeta['security.two_factor_auth'] ? this.securityConfigMeta['security.two_factor_auth'].configValue : false),
           sessionTimeout: Number(this.securityConfigMeta['security.session_timeout'] ? this.securityConfigMeta['security.session_timeout'].configValue : 30),
           maxLoginAttempts: Number(this.securityConfigMeta['security.max_login_attempts'] ? this.securityConfigMeta['security.max_login_attempts'].configValue : 5),
         }
@@ -148,23 +170,12 @@
           senderEmail: this.emailConfigMeta['email.sender_email'] ? this.emailConfigMeta['email.sender_email'].configValue : '',
         }
       },
-      buildConfigPayload(metaMap, values) {
-        return Object.entries(values).map(([key, configValue]) => ({
-          id: metaMap[key] ? metaMap[key].id : '',
-          configKey: key,
-          configValue: String(configValue),
-          group: metaMap[key] ? metaMap[key].group : key.split('.')[0],
-          name: metaMap[key] ? metaMap[key].name : key,
-          valueType: metaMap[key] ? metaMap[key].valueType : 'string',
-          remark: metaMap[key] ? metaMap[key].remark || '' : '',
-        }))
-      },
       saveBasicSettings() {
         this.$refs.basicForm.validate(async (valid) => {
           if (!valid) return false
           this.saving.basic = true
           try {
-            await saveSettings(this.buildConfigPayload(this.basicConfigMeta, {
+            await saveSettings(buildSettingsPayload(this.basicConfigMeta, {
               'site.title': this.basicForm.siteName,
               'site.description': this.basicForm.description,
               'site.logo': this.basicForm.logo,
@@ -189,7 +200,7 @@
           if (!valid) return false
           this.saving.security = true
           try {
-            await saveSettings(this.buildConfigPayload(this.securityConfigMeta, {
+            await saveSettings(buildSettingsPayload(this.securityConfigMeta, {
               'security.password_min_length': this.securityForm.minPasswordLength,
               'security.login_captcha': this.securityForm.loginCaptcha,
               'security.two_factor_auth': this.securityForm.twoFactorAuth,
@@ -208,7 +219,7 @@
           if (!valid) return false
           this.saving.email = true
           try {
-            await saveSettings(this.buildConfigPayload(this.emailConfigMeta, {
+            await saveSettings(buildSettingsPayload(this.emailConfigMeta, {
               'email.smtp_server': this.emailForm.smtpServer,
               'email.smtp_port': this.emailForm.smtpPort,
               'email.username': this.emailForm.username,
@@ -253,5 +264,46 @@
     text-align: center;
     border: 1px dashed #d9d9d9;
     border-radius: 12px;
+  }
+
+  .site-preview {
+    max-width: 640px;
+  }
+
+  .site-preview__header {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    margin-bottom: 16px;
+    padding: 16px;
+    border: 1px solid #ebeef5;
+    border-radius: 12px;
+  }
+
+  .site-preview__logo {
+    display: flex;
+    width: 64px;
+    height: 64px;
+    align-items: center;
+    justify-content: center;
+    object-fit: cover;
+    border-radius: 14px;
+    background: #f5f7fa;
+  }
+
+  .site-preview__logo--placeholder {
+    color: #909399;
+    font-size: 12px;
+  }
+
+  .site-preview__title {
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  .site-preview__desc {
+    margin-top: 6px;
+    color: #606266;
+    line-height: 1.6;
   }
 </style>
