@@ -12,7 +12,6 @@
                 <i v-else class="el-icon-plus avatar-uploader-icon"></i>
               </el-upload>
             </el-form-item>
-            <el-form-item label="维护模式"><el-switch v-model="basicForm.maintenanceMode" /></el-form-item>
             <el-form-item>
               <el-button :loading="saving.basic" type="primary" @click="saveBasicSettings">保存设置</el-button>
               <el-button @click="loadBasicSettings">重载</el-button>
@@ -30,8 +29,8 @@
             </div>
             <el-alert
               :closable="false"
-              :title="basicForm.maintenanceMode ? '当前已开启维护模式' : '当前为正常访问模式'"
-              :type="basicForm.maintenanceMode ? 'warning' : 'success'"
+              title="当前站点配置预览"
+              type="success"
               show-icon
             />
           </div>
@@ -74,7 +73,6 @@
     fetchSettingsByGroup,
     publicUploadEndpoint,
     saveSettings,
-    toBooleanSetting,
     uploadHeaders as buildUploadHeaders,
   } from '@/api/systemSettings'
   import { applySiteSettings } from '@/utils/siteSettings'
@@ -89,7 +87,7 @@
         basicConfigMeta: {},
         securityConfigMeta: {},
         emailConfigMeta: {},
-        basicForm: { siteName: '', description: '', logo: '', maintenanceMode: false },
+        basicForm: { siteName: '', description: '', logo: '' },
         securityForm: { minPasswordLength: 8, loginCaptcha: false, twoFactorAuth: false, sessionTimeout: 30, maxLoginAttempts: 5 },
         emailForm: { smtpServer: '', smtpPort: 587, username: '', password: '', senderEmail: '' },
         basicRules: {
@@ -146,7 +144,6 @@
           siteName: this.basicConfigMeta['site.title'] ? this.basicConfigMeta['site.title'].configValue : '',
           description: this.basicConfigMeta['site.description'] ? this.basicConfigMeta['site.description'].configValue : '',
           logo: this.basicConfigMeta['site.logo'] ? this.basicConfigMeta['site.logo'].configValue : '',
-          maintenanceMode: toBooleanSetting(this.basicConfigMeta['site.maintenance_mode'] ? this.basicConfigMeta['site.maintenance_mode'].configValue : false),
         }
         applySiteSettings(this, this.basicForm)
       },
@@ -179,14 +176,12 @@
               'site.title': this.basicForm.siteName,
               'site.description': this.basicForm.description,
               'site.logo': this.basicForm.logo,
-              'site.maintenance_mode': this.basicForm.maintenanceMode,
             }))
             await this.loadBasicSettings()
             applySiteSettings(this, {
               siteName: this.basicForm.siteName,
               description: this.basicForm.description,
               logo: this.basicForm.logo,
-              maintenanceMode: this.basicForm.maintenanceMode,
             })
             document.title = this.basicForm.siteName
             this.$baseMessage('基本设置保存成功', 'success')

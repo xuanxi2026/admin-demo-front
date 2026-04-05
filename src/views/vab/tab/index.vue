@@ -157,9 +157,6 @@
                   <el-form-item label="开启评论">
                     <el-switch v-model="settingForm.comment"></el-switch>
                   </el-form-item>
-                  <el-form-item label="维护模式">
-                    <el-switch v-model="settingForm.maintenance"></el-switch>
-                  </el-form-item>
                   <el-form-item>
                     <el-button type="primary" @click="saveSettings">保存设置</el-button>
                   </el-form-item>

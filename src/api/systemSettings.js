@@ -8,7 +8,6 @@ export const defaultSettings = {
     'site.title': { group: 'site', name: '站点标题', valueType: 'string', configValue: 'Admin Demo' },
     'site.description': { group: 'site', name: '站点描述', valueType: 'string', configValue: '可复用后台管理系统基座' },
     'site.logo': { group: 'site', name: '站点 Logo', valueType: 'string', configValue: '' },
-    'site.maintenance_mode': { group: 'site', name: '维护模式', valueType: 'boolean', configValue: 'false' },
   },
   security: {
     'security.login_captcha': { group: 'security', name: '登录验证码', valueType: 'boolean', configValue: 'false' },
@@ -28,10 +27,6 @@ export const defaultSettings = {
 
 function resolveGroupDefaults(group) {
   return defaultSettings[group] || {}
-}
-
-export function toBooleanSetting(value) {
-  return String(value) === 'true'
 }
 
 export async function fetchSettingsByGroup(group) {

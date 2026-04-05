@@ -17,16 +17,6 @@
         </div>
       </div>
       <div class="vab-main main-padding">
-        <el-alert
-          v-if="siteSettings.maintenanceMode"
-          :closable="false"
-          class="global-maintenance-alert"
-          title="系统当前处于维护模式"
-          type="warning"
-          show-icon
-        >
-          {{ siteSettings.description || '维护期间部分功能可能受限，请关注通知公告。' }}
-        </el-alert>
         <vab-ad />
         <vab-app-main />
       </div>
@@ -46,16 +36,6 @@
           <vab-nav />
           <vab-tabs v-if="tabsBar === 'true' || tabsBar === true" />
         </div>
-        <el-alert
-          v-if="siteSettings.maintenanceMode"
-          :closable="false"
-          class="global-maintenance-alert"
-          title="系统当前处于维护模式"
-          type="warning"
-          show-icon
-        >
-          {{ siteSettings.description || '维护期间部分功能可能受限，请关注通知公告。' }}
-        </el-alert>
         <vab-ad />
         <vab-app-main />
       </div>
@@ -67,7 +47,7 @@
 <script>
   import { mapActions, mapGetters } from 'vuex'
   import { tokenName } from '@/config'
-  import { SITE_SETTINGS_EVENT, getRuntimeDescription, getRuntimeMaintenanceMode, refreshSiteSettings } from '@/utils/siteSettings'
+  import { SITE_SETTINGS_EVENT, getRuntimeDescription, refreshSiteSettings } from '@/utils/siteSettings'
 
   export default {
     name: 'Layout',
@@ -78,7 +58,6 @@
         timeOutID: null,
         siteSettings: {
           description: getRuntimeDescription(),
-          maintenanceMode: getRuntimeMaintenanceMode(),
         },
       }
     },
@@ -149,7 +128,6 @@
       handleSiteSettingsChange(settings = {}) {
         this.siteSettings = {
           description: settings.description || '',
-          maintenanceMode: !!settings.maintenanceMode,
         }
       },
       handleResize() {
@@ -184,10 +162,6 @@
     position: relative;
     width: 100%;
     height: 100%;
-
-    .global-maintenance-alert {
-      margin: $base-padding $base-padding 0;
-    }
 
     .layout-container-horizontal {
       position: relative;

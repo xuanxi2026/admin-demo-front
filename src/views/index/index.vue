@@ -9,9 +9,7 @@
               <div class="site-hero__title">{{ siteInfo.siteName || 'Admin Demo' }}</div>
               <div class="site-hero__desc">{{ siteInfo.description || '可复用后台管理系统基座' }}</div>
             </div>
-            <el-tag :type="siteInfo.maintenanceMode ? 'warning' : 'success'" effect="light">
-              {{ siteInfo.maintenanceMode ? '维护模式' : '运行中' }}
-            </el-tag>
+            <el-tag type="success" effect="light">运行中</el-tag>
           </div>
         </el-card>
       </el-col>
@@ -456,7 +454,7 @@
   import VabChart from '@/plugins/echarts'
   import { dependencies, devDependencies } from '../../../package.json'
   import { getNoticeList } from '@/api/notice'
-  import { SITE_SETTINGS_EVENT, getRuntimeDescription, getRuntimeMaintenanceMode, getRuntimeTitle } from '@/utils/siteSettings'
+  import { SITE_SETTINGS_EVENT, getRuntimeDescription, getRuntimeTitle } from '@/utils/siteSettings'
 
   export default {
     name: 'Index',
@@ -473,7 +471,6 @@
         siteInfo: {
           siteName: getRuntimeTitle(),
           description: getRuntimeDescription(),
-          maintenanceMode: getRuntimeMaintenanceMode(),
         },
         config1: {
           startVal: 0,
@@ -957,7 +954,6 @@
         this.siteInfo = {
           siteName: settings.siteName || getRuntimeTitle(),
           description: settings.description || getRuntimeDescription(),
-          maintenanceMode: !!settings.maintenanceMode,
         }
       },
       handleClick(e) {

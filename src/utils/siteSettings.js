@@ -25,10 +25,6 @@ export function getRuntimeDescription() {
   return readSiteSettings().description || ''
 }
 
-export function getRuntimeMaintenanceMode() {
-  return !!readSiteSettings().maintenanceMode
-}
-
 function syncMetaDescription(description = '') {
   if (typeof document === 'undefined') return
   let meta = document.querySelector('meta[name="description"]')
@@ -53,7 +49,6 @@ export async function refreshSiteSettings(vm) {
     siteName: meta['site.title'] && meta['site.title'].configValue ? meta['site.title'].configValue : defaultTitle,
     description: meta['site.description'] && meta['site.description'].configValue ? meta['site.description'].configValue : '',
     logo: meta['site.logo'] && meta['site.logo'].configValue ? meta['site.logo'].configValue : '',
-    maintenanceMode: String(meta['site.maintenance_mode'] && meta['site.maintenance_mode'].configValue) === 'true',
   }
   applySiteSettings(vm, settings)
   return settings
